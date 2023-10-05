@@ -10,27 +10,28 @@ import gulpSass from 'gulp-sass';
 
 const sass = gulpSass(dartSass);
 
-const LIB = 'lib';
-const DIST = 'dist';
+const BUILD = 'build';
+const LIB = `${BUILD}/lib`;
+const DIST = `${BUILD}/dist`;
 const TEST = 'test';
 const PKG_PATH = './packages';
 const NODE_MODULES = 'node_modules';
 
 const JS_PKGS = [
-  'react-bootstrap-table2',
-  'react-bootstrap-table2-editor',
-  'react-bootstrap-table2-filter',
-  'react-bootstrap-table2-overlay',
-  'react-bootstrap-table2-paginator',
+  // 'react-bootstrap-table2',
+  // 'react-bootstrap-table2-editor',
+  // 'react-bootstrap-table2-filter',
+  // 'react-bootstrap-table2-overlay',
+  // 'react-bootstrap-table2-paginator',
   'react-bootstrap-table2-toolkit'
 ].reduce((pkg, curr) => `${curr}|${pkg}`, '');
 
 const JS_SKIPS = `+(${TEST}|${LIB}|${DIST}|${NODE_MODULES})`;
 
 const STYLE_PKGS = [
-  'react-bootstrap-table2',
-  'react-bootstrap-table2-filter',
-  'react-bootstrap-table2-paginator',
+  // 'react-bootstrap-table2',
+  // 'react-bootstrap-table2-filter',
+  // 'react-bootstrap-table2-paginator',
   'react-bootstrap-table2-toolkit',
 ].reduce((pkg, curr) => `${curr}|${pkg}`, '');
 
@@ -78,21 +79,33 @@ function styles() {
     .pipe(gulp.dest(PKG_PATH));
 }
 
+// () => gulp.src('./webpack/next.umd.babel.js').pipe(shell(['webpack --config <%= file.path %>'])),
+// () => gulp.src('./webpack/editor.umd.babel.js').pipe(shell(['webpack --config <%= file.path %>'])),
+// () => gulp.src('./webpack/filter.umd.babel.js').pipe(shell(['webpack --config <%= file.path %>'])),
+// () => gulp.src('./webpack/overlay.umd.babel.js').pipe(shell(['webpack --config <%= file.path %>'])),
+// () => gulp.src('./webpack/paginator.umd.babel.js').pipe(shell(['webpack --config <%= file.path %>'])),
 function umd(done) {
   gulp.parallel(
-    () => gulp.src('./webpack/next.umd.babel.js').pipe(shell(['webpack --config <%= file.path %>'])),
-    () => gulp.src('./webpack/editor.umd.babel.js').pipe(shell(['webpack --config <%= file.path %>'])),
-    () => gulp.src('./webpack/filter.umd.babel.js').pipe(shell(['webpack --config <%= file.path %>'])),
-    () => gulp.src('./webpack/overlay.umd.babel.js').pipe(shell(['webpack --config <%= file.path %>'])),
-    () => gulp.src('./webpack/paginator.umd.babel.js').pipe(shell(['webpack --config <%= file.path %>'])),
     () => gulp.src('./webpack/toolkit.umd.babel.js').pipe(shell(['webpack --config <%= file.path %>']))
   )();
   done();
 }
 
+function packageJson() {
+  return gulp
+    .src([
+      `./packages/+(${STYLE_PKGS})/package.json`
+    ])
+    .pipe(rename((path) => {
+      path.dirname += `/${BUILD}`;
+    }))
+    .pipe(gulp.dest(PKG_PATH));
+}
+
 const buildJS = gulp.parallel(umd, scripts);
 const buildCSS = styles;
-const build = gulp.series(clean, gulp.parallel(buildJS, buildCSS));
+const buildPackageJson = packageJson;
+const build = gulp.series(clean, gulp.parallel(buildJS, buildCSS, buildPackageJson));
 
 gulp.task('prod', build);
 gulp.task('default', build);
